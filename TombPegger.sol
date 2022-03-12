@@ -467,7 +467,7 @@ contract TombPegger is Ownable{
        }
    }
 
-   function execute() public onlyOwner{
+   function execute() public{
        uint currentTombPrice = getTombPrice();
        for(uint i=0;i<holders.length;i++){
            address user = holders[i].user;
@@ -562,10 +562,7 @@ contract TombPegger is Ownable{
        return percentage;
    }
 
-   function withdraw(address _user,uint256 _amount) internal{
-     (bool sent, bytes memory data) = _user.call{value:_amount}("");
-     require(sent,"failed ftm transfer");
-   }
+   
 
    function getRounds(address addr) public  view returns (  Round[] memory __rounds){
        return users[addr].rounds;
@@ -604,8 +601,8 @@ contract TombPegger is Ownable{
      //TODO Do Swap operations.
    }
 
-   function emergencyWithdraw(uint256 amount) public onlyOwner{
-       IWETH(wFTMAdress).transfer(msg.sender,amount);
+   function emergencyWithdraw(uint256 amount,address _contract) public onlyOwner{
+       IERC20(_contract).transfer(msg.sender,amount);
    }
 
 
