@@ -26,6 +26,7 @@ contract PeggerRewards is Ownable{
     address wftm;
     uint256 feeRate;
     address feeAddress;
+    uint256 totalFee;
     constructor (address _feeAddress,uint256 _feeRate,address _wftm){
         wftm = _wftm;
         feeRate = _feeRate;
@@ -58,8 +59,10 @@ contract PeggerRewards is Ownable{
     }
 
     function sendFee(uint256 amount) internal  {
-        IERC20(wftm).transfer(feeAddress,amount);
-
+        totalFee += amount;
+    }
+    function withdrawFee() public onlyOwner  {
+        IERC20(wftm).transfer(msg.sender,totalFee);
     }
 
     function calculateFee(uint256 amount) internal returns(uint256 _amount) {
