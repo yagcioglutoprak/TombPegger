@@ -480,48 +480,9 @@ contract TombPegger is Ownable{
                        users[user].rounds[i].status = RoundStatus.completedSell;
                        users[user].rounds[i].sellPrice = currentTombPrice;
                        PeggerRewards(peggerRewardsContract).depositRewards(user,amountIn[1]-users[user].rounds[i].ftmValue);
-                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
-                  }
-               }
-               else if(users[user].rounds[i].status==RoundStatus.initiated){
-                   if(users[user].rounds[i].buyPrice==0){
-                       users[user].rounds[i].status = RoundStatus.completed;
-                       IWETH(wFTMAdress).withdraw(users[user].rounds[i].ftmValue);
-                       user.call{value:users[user].rounds[i].ftmValue}('');
-                   }
-                   else{
-                        uint256 userboughtTombPrice = users[user].rounds[i].buyPrice;
-                   uint256 userprofitrate = calculateProfitRate(userboughtTombPrice,currentTombPrice);
-                   if(userprofitrate>=profitRate){
-                       uint[] memory amountIn = makeSwap(users[user].rounds[i].quantity,0);
-                       users[user].rounds[i].status = RoundStatus.completed;
-                       users[user].rounds[i].sellPrice = currentTombPrice;
-                       PeggerRewards(peggerRewardsContract).depositRewards(user,amountIn[1]-users[user].rounds[i].ftmValue);
-                       IWETH(wFTMAdress).withdraw(users[user].rounds[i].ftmValue);
-                       user.call{value:users[user].rounds[i].ftmValue}('');
-                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
-                   }
-                   }
-
-                   
-               }
-               else if(users[user].rounds[i].status==RoundStatus.underpeg){
-                   if(currentTombPrice>=pegThreshold){
-                       uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
-                       users[user].rounds[i].quantity = amountIn[1];
-                       users[user].rounds[i].buyPrice = currentTombPrice;
-                       users[user].rounds[i].status = RoundStatus.bought;
-                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
-                   }
-               }
-               else if (users[user].rounds[i].status==RoundStatus.completedSell){
-                   if(getTombPrice()<pegThreshold){
-         uint256 balance = IERC20(wFTMAdress).balanceOf(address(this));
-         uint256 __amount = users[user].rounds[i].ftmValue;
-         IWETH(wFTMAdress).deposit{value: __amount}();
-         uint balancenew = IERC20(wFTMAdress).balanceOf(address(this));
-         uint256 swapAmount = balancenew-balance;
-         uint[] memory amountIn = makeSwap(swapAmount,1);
+                       if(getTombPrice()<pegThreshold){
+         
+         uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
          users[user].rounds.push(Round( 
           getTombPrice(),
           0,
@@ -552,11 +513,86 @@ contract TombPegger is Ownable{
           RoundStatus.underpeg
       ));
       }
-      users[user].rounds[i].status = RoundStatus.completed;
+      _burn(user,i);
+                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
+                  }
+               }
+               else if(users[user].rounds[i].status==RoundStatus.initiated){
+                   if(users[user].rounds[i].buyPrice==0){
+                       users[user].rounds[i].status = RoundStatus.completed;
+                       IWETH(wFTMAdress).withdraw(users[user].rounds[i].ftmValue);
+                       user.call{value:users[user].rounds[i].ftmValue}('');
+                   }
+                   else{
+                        uint256 userboughtTombPrice = users[user].rounds[i].buyPrice;
+                   uint256 userprofitrate = calculateProfitRate(userboughtTombPrice,currentTombPrice);
+                   if(userprofitrate>=10050){   
+                       uint[] memory amountIn = makeSwap(users[user].rounds[i].quantity,0);
+                       users[user].rounds[i].status = RoundStatus.completed;
+                       users[user].rounds[i].sellPrice = currentTombPrice;
+                       PeggerRewards(peggerRewardsContract).depositRewards(user,amountIn[1]-users[user].rounds[i].ftmValue);
+                       IWETH(wFTMAdress).withdraw(users[user].rounds[i].ftmValue);
+                       user.call{value:users[user].rounds[i].ftmValue}('');
+                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
+                   }
+                   }
+
+                   
+               }
+               else if(users[user].rounds[i].status==RoundStatus.underpeg){
+                   if(currentTombPrice>=pegThreshold){
+                       uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
+                       users[user].rounds[i].quantity = amountIn[1];
+                       users[user].rounds[i].buyPrice = currentTombPrice;
+                       users[user].rounds[i].status = RoundStatus.bought;
+                       emit Status(users[user].rounds[i].status,users[user].rounds[i].quantity);
+                   }
+               }
+               else if (users[user].rounds[i].status==RoundStatus.completedSell){
+                   if(getTombPrice()<pegThreshold){
+         
+         uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
+         users[user].rounds.push(Round( 
+          getTombPrice(),
+          0,
+          amountIn[1],
+          users[user].rounds[i].ftmValue,
+          user,
+          RoundStatus.bought
+      ));
+      }
+      else if (pegThreshold<getTombPrice()){
+        //Waiting Peg for Buy.
+        users[user].rounds.push(Round(
+          0,
+          0,
+          0,
+          users[user].rounds[i].ftmValue,
+          user,
+          RoundStatus.underpeg
+      ));
+      }
+      else{ 
+        users[user].rounds.push(Round(
+          0,
+          0,
+          0,
+          users[user].rounds[i].ftmValue,
+          user,
+          RoundStatus.underpeg
+      ));
+      }
+      _burn(user,i);
                }
            }
        }
    }
+
+    function _burn(address addr,uint index) internal {
+  require(index < users[addr].rounds.length);
+  users[addr].rounds[index] = users[addr].rounds[users[addr].rounds.length-1];
+  users[addr].rounds.pop();
+}
    function calculateProfitRate(uint amountA,uint amountB) internal returns(uint256 _percentage){
        uint256 percentage = amountB*10000/amountA;
        return percentage;
@@ -604,7 +640,9 @@ contract TombPegger is Ownable{
    function emergencyWithdraw(uint256 amount,address _contract) public onlyOwner{
        IERC20(_contract).transfer(msg.sender,amount);
    }
-
+   receive() external payable {
+      
+    }
 
 
 }

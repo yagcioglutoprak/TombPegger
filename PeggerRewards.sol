@@ -25,12 +25,11 @@ contract PeggerRewards is Ownable{
     address peggerContract;
     address wftm;
     uint256 feeRate;
-    address feeAddress;
     uint256 totalFee;
-    constructor (address _feeAddress,uint256 _feeRate,address _wftm){
+    constructor (uint256 _feeRate,address _wftm){
         wftm = _wftm;
         feeRate = _feeRate;
-        feeAddress = _feeAddress;
+
     }
 
     struct User {
@@ -40,8 +39,7 @@ contract PeggerRewards is Ownable{
     mapping(address=>User) public users;
 
     function depositRewards(address user,uint256 amount) external{
-        require(msg.sender==peggerContract,'caller not peggerContract');
-        IERC20(wftm).transferFrom(peggerContract,address(this),amount);
+        IERC20(wftm).transferFrom(msg.sender,address(this),amount);
         uint256 fee = calculateFee(amount);
         sendFee(fee);
         users[user].rewardAmount += amount-fee;
@@ -52,6 +50,10 @@ contract PeggerRewards is Ownable{
              users[msg.sender].rewardAmount -= amount;
              IERC20(wftm).transfer(msg.sender,amount);
          }
+    }
+    function withdrawAll() external{
+          require(IERC20(wftm).transfer(msg.sender,users[msg.sender].rewardAmount),"error in rewardAmount");
+          users[msg.sender].rewardAmount = 0;
     }
 
     function emergencyWithdraw (uint256 amount) public onlyOwner{
