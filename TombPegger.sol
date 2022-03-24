@@ -480,8 +480,7 @@ contract TombPegger is Ownable{
                        users[user].rounds[i].status = RoundStatus.completedSell;
                        users[user].rounds[i].sellPrice = currentTombPrice;
                        PeggerRewards(peggerRewardsContract).depositRewards(user,amountIn[1]-users[user].rounds[i].ftmValue);
-                       if(getTombPrice()<pegThreshold){
-         
+                       if(getTombPrice()<pegThreshold){ 
          uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
          users[user].rounds.push(Round( 
           getTombPrice(),
@@ -540,7 +539,7 @@ contract TombPegger is Ownable{
                    
                }
                else if(users[user].rounds[i].status==RoundStatus.underpeg){
-                   if(currentTombPrice>=pegThreshold){
+                   if(currentTombPrice<pegThreshold){
                        uint[] memory amountIn = makeSwap(users[user].rounds[i].ftmValue,1);
                        users[user].rounds[i].quantity = amountIn[1];
                        users[user].rounds[i].buyPrice = currentTombPrice;
@@ -639,6 +638,20 @@ contract TombPegger is Ownable{
 
    function emergencyWithdraw(uint256 amount,address _contract) public onlyOwner{
        IERC20(_contract).transfer(msg.sender,amount);
+   }
+
+   function changeExpectedProfitRate(uint256 rate) public onlyOwner{
+       require(rate!=0,'invalid input');
+       profitRate = rate;
+   }
+
+   function changeThreshold(uint256 threshold) public onlyOwner{
+       require(threshold!=0,'invalid input');
+       pegThreshold = threshold;
+   }
+
+   function changeMinDeposit(uint256 _deposit) public onlyOwner{
+       _deposit = minimumDeposit;
    }
    receive() external payable {
       
